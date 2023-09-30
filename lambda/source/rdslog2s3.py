@@ -18,6 +18,8 @@ def copy_rds_log_to_s3(db_id,s3_bucket,last_backuped):
             Marker = marker,
         )
         for f in response['DescribeDBLogFiles']:
+            if f['LastWritten'] < last_backuped :
+                continue;
             #print(f['LogFileName'])
             r = rds_client.download_db_log_file_portion(
                 DBInstanceIdentifier = db_id,
