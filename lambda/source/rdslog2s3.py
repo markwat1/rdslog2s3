@@ -23,7 +23,8 @@ def copy_rds_log_to_s3(db_id,s3_bucket,last_backuped):
             #print(f['LogFileName'])
             r = rds_client.download_db_log_file_portion(
                 DBInstanceIdentifier = db_id,
-                LogFileName=f['LogFileName']
+                LogFileName=f['LogFileName'],
+                Marker = '0'
             )
             # print(r)
             sr = s3_client.list_objects(
@@ -53,7 +54,6 @@ def rdslog2s3(tablename):
         db_id = rds['RdsIdentifier']['S']
         s3_bucket = rds['S3Bucket']['S']
         last_backuped = rds['lastBackuped']['S']
-        print("{} {} {}".format(db_id,s3_bucket,last_backuped))
         timestamp = datetime.datetime.timestamp(datetime.datetime.now())
         ddb_client.put_item(
             TableName = tablename,
@@ -70,7 +70,7 @@ def rdslog2s3(tablename):
             }
         )
         print("{} {} {}".format(db_id,s3_bucket,last_backuped))
-#       copy_rds_log_to_s3(db_id,s3_bucket,last_backuped)
+        copy_rds_log_to_s3(db_id,s3_bucket,last_backuped)
 
 def handler(event, context):
     rdslog2s3(os.environ['TABLENAME'])
