@@ -19,7 +19,7 @@ export class Rdslog2S3Stack extends cdk.Stack {
     const rdsAccessRole = new iam.Role(this,'rdsAccessRole',{
       assumedBy:new iam.ServicePrincipal("lambda.amazonaws.com")
     });
-    rdsAccessRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRDSReadOnlyAccess"));
+    rdsAccessRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AmazonRDSFullAccess"));
     const testfunc = new lambda.Function(this, 'rdslog2s3', {
       code: lambda.Code.fromAsset('lambda/source'),
       handler: 'rdslog2s3.handler',
