@@ -3,6 +3,7 @@ import os
 import boto3
 import argparse
 import datetime
+import zlib
 
 rds_client = boto3.client('rds')
 s3_client = boto3.client('s3')
@@ -11,6 +12,7 @@ MaxRecords = 50
 
 
 def copy_rds_log_to_s3(db_id,s3_bucket,last_backuped):
+    marker=''
     while True:
         response = rds_client.describe_db_log_files(
             DBInstanceIdentifier = db_id,
@@ -18,38 +20,35 @@ def copy_rds_log_to_s3(db_id,s3_bucket,last_backuped):
             Marker = marker,
         )
         for f in response['DescribeDBLogFiles']:
-            if f['LastWritten'] < last_backuped :
+            if f['LastWritten'] < float(last_backuped) :
                 continue;
-            #print(f['LogFileName'])
             r = rds_client.download_db_log_file_portion(
                 DBInstanceIdentifier = db_id,
                 LogFileName=f['LogFileName'],
                 Marker = '0'
             )
-            # print(r)
             sr = s3_client.list_objects(
                 Bucket = s3_bucket,
                 Prefix = f['LogFileName'],
             )
+            compressed = zlib.compress(bytes(r['LogFileData'], 'utf-8'))
+            logFileName = f['LogFileName'] + '.gz'
             if ('Contents' not in sr) or (sr['Contents'][0]['Size'] != len(r['LogFileData'])):
                 s3_client.put_object(
-                    Body = r['LogFileData'],
-                    Key = f['LogFileName'],
+                    Body = compressed,
+                    Key = logFileName,
                     Bucket = s3_bucket
                 )
-                print("Put Log file {}".format(f['LogFileName']))
         if 'Marker' not in response:
             break;
         else:
             marker = response['Marker']
 
 def rdslog2s3(tablename):
-    marker = ''
     ddb_result = ddb_client.scan(
         TableName = tablename,
         Limit = MaxRecords,
     )
-    print(ddb_result)
     for rds in ddb_result['Items']:
         db_id = rds['RdsIdentifier']['S']
         s3_bucket = rds['S3Bucket']['S']
@@ -69,7 +68,6 @@ def rdslog2s3(tablename):
                 }
             }
         )
-        print("{} {} {}".format(db_id,s3_bucket,last_backuped))
         copy_rds_log_to_s3(db_id,s3_bucket,last_backuped)
 
 def handler(event, context):
@@ -83,5 +81,4 @@ if __name__ == "__main__":
                         dest = 'tablename',
                         required=True)
     args = parser.parse_args()
-    print(args.tablename)
     rdslog2s3(args.tablename)

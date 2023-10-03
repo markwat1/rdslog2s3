@@ -36,11 +36,11 @@ export class Rdslog2S3Stack extends cdk.Stack {
         Item: {
           "RdsIdentifier": {"S": "database-2-instance-1" },
           "S3Bucket": {"S":  bucket.bucketName },
-          "lastBackuped" : {"S": ""}
+          "lastBackuped" : {"S": "0.0"}
         },
       }
     });
     table.grantFullAccess(testfunc);
-    bucket.grantWrite(testfunc);
+    bucket.grantReadWrite(testfunc);
   }
 }
