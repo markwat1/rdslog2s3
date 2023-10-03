@@ -24,6 +24,7 @@ export class Rdslog2S3Stack extends cdk.Stack {
       code: lambda.Code.fromAsset('lambda/source'),
       handler: 'rdslog2s3.handler',
       runtime: lambda.Runtime.PYTHON_3_9,
+      timeout:cdk.Duration.minutes(15),
       environment:{
         TABLENAME: table.tableName
       },
