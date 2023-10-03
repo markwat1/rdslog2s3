@@ -5,6 +5,8 @@ import { aws_dynamodb as ddb } from 'aws-cdk-lib';
 import { PutItem } from './dynamodb';
 import { aws_s3 as s3 } from 'aws-cdk-lib';
 import { aws_iam as iam } from 'aws-cdk-lib';
+import {aws_events as events } from 'aws-cdk-lib';
+import {aws_events_targets as targets } from 'aws-cdk-lib';
 
 export class Rdslog2S3Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -43,5 +45,9 @@ export class Rdslog2S3Stack extends cdk.Stack {
     });
     table.grantFullAccess(testfunc);
     bucket.grantReadWrite(testfunc);
+    const schedule = new events.Rule(this,'eventRule',{
+      schedule: events.Schedule.cron({minute: "15"}),
+      targets:[new targets.LambdaFunction(testfunc,{retryAttempts: 3})],
+    });
   }
 }
